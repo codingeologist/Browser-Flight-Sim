@@ -11,24 +11,105 @@ mapboxgl.accessToken = 'pk.eyJ1Ijoic2lkbWFwbHl0aXgiLCJhIjoiY2t1Mnk3N2gyMTN2azJyd
 // mapbox://styles/sidmaplytix/ckug26u3d457g18rz7ytk85tz Satellite Buildings
 // mapbox://styles/sidmaplytix/cl0lkv9ue000h14nuavg94syc Satellite Street Buildings
 
+function randomFlt(min, max, decimal) {
+    const str = (Math.random() * (max - min) + min).toFixed(decimal);
+
+    return parseFloat(str);
+}
+
+function randomInt(min, max) {
+    const str = (Math.random() * (max - min) + min);
+
+    return parseInt(str);
+}
+
+let coords;
+
+function chooseLoc() {
+
+  let lng;
+
+  let lat;
+
+  let loc;
+
+  let lngTokyo = randomFlt(139.715538, 139.799824, 6);
+
+  let latTokyo = randomFlt(35.652554, 35.704705, 6);
+  
+  let lngBangkok = randomFlt(100.478725, 100.537176, 6);
+  
+  let latBangkok = randomFlt(13.734216, 13.782653, 6);
+  
+  let lngBombay = randomFlt(72.800131, 72.838840, 6);
+  
+  let latBombay = randomFlt(18.930888, 18.958328, 6);
+  
+  let lngParis = randomFlt(2.279663, 2.324209, 6);
+  
+  let latParis = randomFlt(48.851727, 48.873579, 6);
+  
+  let lngRome = randomFlt(12.471156, 12.513041, 6);
+  
+  let latRome = randomFlt(41.880457, 41.900584, 6);
+  
+  let lngLondon = randomFlt(-0.136213, -0.102911, 6);
+  
+  let latLondon = randomFlt(51.491377, 51.509597, 6);
+
+  let x = randomInt(1,6)
+
+  if (x === 1) {
+    lng = lngTokyo;
+    lat = latTokyo;
+    loc = "Tokyo";
+  } else if (x === 2) {
+    lng = lngBangkok;
+    lat = latBangkok;
+    loc = "Bangkok";
+  } else if (x === 3) {
+    lng = lngBombay;
+    lat = latBombay;
+    loc = "Bombay";
+  } else if (x === 4) {
+    lng = lngParis;
+    lat = latParis;
+    loc = "Paris";
+  } else if (x === 5) {
+    lng = lngRome;
+    lat = latRome;
+    loc = "Rome";
+  } else if (x === 6) {
+    lng = lngLondon;
+    lat = latLondon;
+    loc = "London";
+  }
+
+  return [lng, lat, loc];
+
+}
+
+coords = chooseLoc()
+
+let startBearing = randomInt(0, 360);
+
+let speed  = 0;
+
+let heading = 180;
+
 const map = new mapboxgl.Map({
     container: 'map', // container ID
     style: 'mapbox://styles/sidmaplytix/cl0lkv9ue000h14nuavg94syc', // style URL
-    center: [-0.123340113695852, 51.500917433778056], // starting position [lng, lat]
+    center: [coords[0], coords[1]], // starting position [lng, lat]
     zoom: 16, // starting zoom
     pitch: 80,
-    bearing: 0,
+    bearing: startBearing,
     antialias: true // create the gl context with MSAA antialiasing, so custom layers are antialiased
     });
 
 const deltaDistance = 100; // pixels map pans when key down
 
 const deltaDegrees = 25; // degrees map rotates when key down
-
-const popup = new mapboxgl.Popup({closeOnClick: false})
-    .setLngLat([-0.123340113695852, 51.500917433778056])
-    .setHTML('<p>WASD keys for flight navigation control</p>')
-    .addTo(map)
 
 function easing(t) {
 
@@ -47,27 +128,39 @@ map.on('load', () => {
         e.preventDefault();
         if (e.which === 87) {
           // forward / up
-          map.panBy([0, -deltaDistance], {
-            easing: easing
-          });
+          speed = 0.0001;
         } else if (e.which === 83) {
           // backward / down
-          map.panBy([0, deltaDistance], {
-            easing: easing
-          });
+          speed = -0.0001;
         } else if (e.which === 65) {
           // left
-          map.easeTo({
-            bearing: map.getBearing() - deltaDegrees,
-            easing: easing
-          });
+          heading -=2;
         } else if (e.which === 68) {
           // right
-          map.easeTo({
-            bearing: map.getBearing() + deltaDegrees,
-            easing: easing
-          });          
+          heading +=2;          
+        } else if (e.which === 87 && e.which === 65) {
+            // forward left
+            speed = 0.0001;
+            heading -=2;
+        } else if (e.which === 87 && e.which === 68) {
+            // forward right
+            speed = 0.0001;
+            heading +=2;
+        } else if (e.which === 83 && e.which === 65) {
+            // backward left
+            speed = -0.0001;
+            heading -=2;
+        } else if (e.which === 83 && e.which === 68) {
+            // backward right
+            speed = -0.0001;
+            heading +=2;
         }
+        var rad = heading * Math.PI / 180;
+        coords[0] += Math.sin(rad) * speed;
+        coords[1] += Math.cos(rad) * speed;
+        map.setBearing(heading);
+        map.setCenter([coords[0], coords[1]])   
+
       },
       true
     );
@@ -104,5 +197,7 @@ map.on('load', () => {
     });
 
     map.addControl(new mapboxgl.NavigationControl());
+
+    document.getElementById("location").innerText = coords[2]
 
 });
