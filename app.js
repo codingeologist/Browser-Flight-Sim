@@ -117,87 +117,124 @@ function easing(t) {
 
 }
 
+let lastKey;
+
+const keys = {
+  a: {
+      pressed: false
+  },
+  d: {
+      pressed: false
+  },
+  w: {
+      pressed: false
+  },
+  s: {
+      pressed: false
+  }
+}
+
+function animate() {
+  window.requestAnimationFrame(animate);
+  if (keys.w.pressed && lastKey === 'w') {
+    // forward
+    speed = 0.00005
+  } else if (keys.s.pressed && lastKey === 's') {
+    // back
+    speed = -0.00005
+  } else if (keys.a.pressed && lastKey === 'a') {
+    // left turn
+    heading -=0.5;
+  } else if (keys.d.pressed && lastKey === 'd') {
+    // right turn
+    heading +=0.5;
+  }
+
+  var rad = heading * Math.PI / 180;
+  coords[0] += Math.sin(rad) * speed;
+  coords[1] += Math.cos(rad) * speed;
+  map.setBearing(heading);
+  map.setCenter([coords[0], coords[1]])    
+
+}
+
 map.on('load', () => {
 
-    map.getCanvas().focus();
+  map.getCanvas().focus();
 
-    map.getCanvas().addEventListener(
+  map.addSource('mapbox-dem',{
+    'type': 'raster-dem',
+    'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+    'tileSize': 512,
+    'maxZoom': 14
+  });
 
-      'keydown',
-      (e) => {
-        e.preventDefault();
-        if (e.which === 87) {
-          // forward / up
-          speed = 0.0001;
-        } else if (e.which === 83) {
-          // backward / down
-          speed = -0.0001;
-        } else if (e.which === 65) {
-          // left
-          heading -=2;
-        } else if (e.which === 68) {
-          // right
-          heading +=2;          
-        } else if (e.which === 87 && e.which === 65) {
-            // forward left
-            speed = 0.0001;
-            heading -=2;
-        } else if (e.which === 87 && e.which === 68) {
-            // forward right
-            speed = 0.0001;
-            heading +=2;
-        } else if (e.which === 83 && e.which === 65) {
-            // backward left
-            speed = -0.0001;
-            heading -=2;
-        } else if (e.which === 83 && e.which === 68) {
-            // backward right
-            speed = -0.0001;
-            heading +=2;
-        }
-        var rad = heading * Math.PI / 180;
-        coords[0] += Math.sin(rad) * speed;
-        coords[1] += Math.cos(rad) * speed;
-        map.setBearing(heading);
-        map.setCenter([coords[0], coords[1]])   
+  map.setTerrain({
+    'source': 'mapbox-dem',
+    'exaggeration': 0.8
+  });
 
-      },
-      true
-    );
+  map.addLayer({
+    'id': 'sky',
+    'type': 'sky',
+    'paint': {
+        'sky-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            0,
+            0,
+            5,
+            0.3,
+            8,
+            1
+        ],
+        'sky-type': 'atmosphere',
+        'sky-atmosphere-sun': [0.0, 0.0],
+        'sky-atmosphere-sun-intensity': 5
+    }
+  });
 
-    map.addSource('mapbox-dem',{
-        'type': 'raster-dem',
-        'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
-        'tileSize': 512,
-        'maxZoom': 14
-    });
-    map.setTerrain({
-        'source': 'mapbox-dem',
-        'exaggeration': 0.8
-    });
-    map.addLayer({
-        'id': 'sky',
-        'type': 'sky',
-        'paint': {
-            'sky-opacity': [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                0,
-                0,
-                5,
-                0.3,
-                8,
-                1
-            ],
-            'sky-type': 'atmosphere',
-            'sky-atmosphere-sun': [0.0, 0.0],
-            'sky-atmosphere-sun-intensity': 5
-        }
-    });
+  map.addControl(new mapboxgl.NavigationControl());
 
-    map.addControl(new mapboxgl.NavigationControl());
+  document.getElementById("location").innerText = coords[2];
 
-    document.getElementById("location").innerText = coords[2]
+  map.getCanvas().addEventListener('keydown', (event) => {
+    switch (event.key) {
+      case 'w':
+        keys.w.pressed = true;
+        lastKey = 'w';
+        break;
+      case 'a':
+        keys.a.pressed = true;
+        lastKey = 'a';
+        break;
+      case 's':
+        keys.s.pressed = true;
+        lastKey = 's';
+        break;
+      case 'd':
+        keys.d.pressed = true;
+        lastKey = 'd';
+    };
+  });
+
+  map.getCanvas().addEventListener('keyup', (event) => {
+    switch (event.key) {
+      case 'w':
+        keys.w.pressed = false;
+        break;
+      case 'a':
+        keys.a.pressed = false;
+        break;
+      case 's':
+        keys.s.pressed = false;
+        break;
+      case 'd':
+        keys.d.pressed = false;
+    };
+  });
+
+  animate();
 
 });
